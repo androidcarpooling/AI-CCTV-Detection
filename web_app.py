@@ -55,7 +55,8 @@ def get_processor():
             import traceback
             print(f"ERROR: Could not initialize processor: {e}")
             traceback.print_exc()
-            raise
+            # Don't raise - return None and let endpoints handle it gracefully
+            return None
     return processor
 
 def init_app():
@@ -548,7 +549,25 @@ DASHBOARD_HTML = """
                     method: 'POST',
                     body: formData
                 });
-                const result = await response.json();
+                
+                // Check if response is ok and has content
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText || 'Unknown error'}`);
+                }
+                
+                // Check if response has content before parsing JSON
+                const text = await response.text();
+                if (!text || text.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+                }
                 
                 if (result.success) {
                     statusDiv.innerHTML = `<div class="alert alert-success">✓ Successfully added ${result.count} faces to watchlist!</div>`;
@@ -556,10 +575,11 @@ DASHBOARD_HTML = """
                     updateFileDisplay('blacklist');
                     loadStats();
                 } else {
-                    statusDiv.innerHTML = `<div class="alert alert-error">Error: ${result.error}</div>`;
+                    statusDiv.innerHTML = `<div class="alert alert-error">Error: ${result.error || 'Unknown error'}</div>`;
                 }
             } catch (error) {
-                statusDiv.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+                console.error('Build watchlist error:', error);
+                statusDiv.innerHTML = `<div class="alert alert-error">Error: ${error.message || 'Failed to build watchlist'}</div>`;
             } finally {
                 document.getElementById('build-btn').disabled = false;
             }
@@ -731,30 +751,54 @@ def index():
 @app.route('/api/stats')
 def stats():
     """Get system statistics."""
-    total_faces = database.count_faces() if database else 0
-    events = event_handler.get_events() if event_handler else []
-    alerts = len([e for e in events if e['type'] == 'alert'])
-    active_jobs = len([j for j in processing_jobs.values() if j.get('status') == 'processing'])
-    
-    return jsonify({
-        'total_faces': total_faces,
-        'total_events': len(events),
-        'alerts': alerts,
-        'active_jobs': active_jobs
-    })
+    try:
+        db = get_database()
+        evt_handler = get_event_handler()
+        
+        total_faces = db.count_faces() if db else 0
+        events = evt_handler.get_events(limit=1000) if evt_handler else []
+        alerts = len([e for e in events if e.get('type') == 'alert' or e.get('type') == 'match'])
+        active_jobs = len([j for j in processing_jobs.values() if j.get('status') == 'processing'])
+        
+        return jsonify({
+            'watchlist_count': total_faces,
+            'total_faces': total_faces,  # Keep both for compatibility
+            'total_events': len(events),
+            'alerts': alerts,
+            'active_jobs': active_jobs
+        }), 200
+    except Exception as e:
+        import traceback
+        print(f"Error in stats endpoint: {e}")
+        print(traceback.format_exc())
+        # Return safe defaults instead of crashing
+        return jsonify({
+            'watchlist_count': 0,
+            'total_faces': 0,
+            'total_events': 0,
+            'alerts': 0,
+            'active_jobs': 0
+        }), 200
 
 @app.route('/api/events')
 def events():
     """Get events."""
-    limit = request.args.get('limit', 100, type=int)
-    event_type = request.args.get('type', None)
-    
-    if event_handler:
-        events_list = event_handler.get_events(event_type=event_type, limit=limit)
-    else:
-        events_list = []
-    
-    return jsonify(events_list)
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        event_type = request.args.get('type', None)
+        
+        evt_handler = get_event_handler()
+        if evt_handler:
+            events_list = evt_handler.get_events(event_type=event_type, limit=limit)
+        else:
+            events_list = []
+        
+        return jsonify(events_list), 200
+    except Exception as e:
+        import traceback
+        print(f"Error in events endpoint: {e}")
+        print(traceback.format_exc())
+        return jsonify([]), 200  # Return empty list instead of error
 
 @app.route('/api/build-watchlist', methods=['POST'])
 def build_watchlist_api():
@@ -779,13 +823,28 @@ def build_watchlist_api():
             return jsonify({'success': False, 'error': 'No valid image files'}), 400
         
         # Build watchlist
-        proc = get_processor()
-        count = proc.build_watchlist('watchlist_photos', person_id_prefix='person')
-        proc.matcher.invalidate_cache()
-        
-        return jsonify({'success': True, 'count': count})
+        try:
+            proc = get_processor()
+            if proc is None:
+                return jsonify({'success': False, 'error': 'Processor not initialized. Models may still be loading. Please try again in a moment.'}), 503  # 503 Service Unavailable
+            
+            count = proc.build_watchlist('watchlist_photos', person_id_prefix='person')
+            if proc.matcher:
+                proc.matcher.invalidate_cache()
+            
+            return jsonify({'success': True, 'count': count}), 200
+        except Exception as build_error:
+            import traceback
+            error_msg = str(build_error)
+            print(f"Error building watchlist: {error_msg}")
+            print(traceback.format_exc())
+            return jsonify({'success': False, 'error': f'Failed to build watchlist: {error_msg}'}), 500
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        error_msg = str(e)
+        print(f"Error in build_watchlist_api: {error_msg}")
+        print(traceback.format_exc())
+        return jsonify({'success': False, 'error': f'Server error: {error_msg}'}), 500
 
 @app.route('/api/process-video', methods=['POST'])
 def process_video_api():
@@ -976,11 +1035,14 @@ def handle_file_too_large(e):
 
 # Initialize app components when module is imported (for gunicorn)
 # This runs when gunicorn imports the module, not when Flask dev server runs
+# Use a try-except to ensure Flask starts even if initialization fails
 try:
     init_app()
 except Exception as e:
+    import traceback
     print(f"WARNING: Initialization had errors, but continuing: {e}")
-    # App will still start, components will initialize lazily
+    traceback.print_exc()
+    # App will still start, components will initialize lazily on first request
 
 if __name__ == '__main__':
     # Only run Flask dev server when executed directly (local development)
