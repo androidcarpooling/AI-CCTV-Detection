@@ -34,5 +34,6 @@ echo ""
 echo "Press CTRL+C to stop"
 echo ""
 
-gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 2 --timeout 120 --access-logfile - --error-logfile - --log-level info web_app:app
+# Use exact same command as Dockerfile for production testing
+gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 300 --keepalive 5 --access-logfile - --error-logfile - --log-level info --preload web_app:app
 
