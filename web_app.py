@@ -22,6 +22,7 @@ CORS(app)
 @app.route('/health')
 def health():
     """Health check endpoint for Railway - must respond quickly."""
+    # Super simple - no database checks, no imports, just return OK
     return jsonify({'status': 'ok', 'message': 'Application is running'}), 200
 
 # Configuration
