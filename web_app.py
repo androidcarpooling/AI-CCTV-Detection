@@ -377,13 +377,17 @@ DASHBOARD_HTML = """
                     <label><strong>Processing Options</strong></label>
                     <div style="margin: 10px 0;">
                         <label>Frame Rate (process every Nth frame):</label>
-                        <input type="number" id="fps" value="10" min="1" max="30" 
+                        <input type="number" id="fps" value="30" min="1" max="60" 
                                style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 100px; margin-left: 10px;">
+                        <small style="color: #666; margin-left: 10px;">Higher = faster (less accurate), Lower = slower (more accurate)</small>
                     </div>
                     <div style="margin: 10px 0;">
                         <label>Similarity Threshold:</label>
                         <input type="number" id="threshold" value="0.35" min="0" max="1" step="0.05"
                                style="padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px; width: 100px; margin-left: 10px;">
+                    </div>
+                    <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 6px;">
+                        <strong>💡 Quick Test Mode:</strong> Set FPS to 30-60 for faster processing during testing/debugging
                     </div>
                 </div>
                 
@@ -547,8 +551,8 @@ DASHBOARD_HTML = """
             formData.append('fps', fps);
             formData.append('threshold', threshold);
             
-            statusDiv.innerHTML = '<div class="alert alert-info">Processing video... This may take a while.</div>';
-            progressDiv.innerHTML = '<div class="progress-bar"><div class="progress-fill" style="width: 0%">0%</div></div>';
+            statusDiv.innerHTML = '<div class="alert alert-info">Starting video processing...</div>';
+            progressDiv.innerHTML = '<div class="progress-bar"><div class="progress-fill" style="width: 10%">Starting...</div></div>';
             
             try {
                 const response = await fetch('/api/process-video', {
@@ -559,17 +563,58 @@ DASHBOARD_HTML = """
                 const result = await response.json();
                 
                 if (result.success) {
-                    statusDiv.innerHTML = `<div class="alert alert-success">✓ Processing complete! Found ${result.matches} matches. <a href="/api/download-results/${result.job_id}">Download Results</a></div>`;
-                    loadResults();
-                    loadStats();
+                    const jobId = result.job_id;
+                    statusDiv.innerHTML = '<div class="alert alert-info">Processing video... This may take a while. <span class="loading"></span></div>';
+                    
+                    // Poll for job status
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const statusResponse = await fetch(`/api/job-status/${jobId}`);
+                            const jobStatus = await statusResponse.json();
+                            
+                            if (jobStatus.status === 'completed') {
+                                clearInterval(pollInterval);
+                                statusDiv.innerHTML = `<div class="alert alert-success">✓ Processing complete! Found ${jobStatus.matches || 0} matches. <a href="/api/download-results/${jobId}" class="btn">Download Results</a></div>`;
+                                progressDiv.innerHTML = '<div class="progress-bar"><div class="progress-fill" style="width: 100%">100% Complete</div></div>';
+                                loadResults();
+                                loadStats();
+                                document.getElementById('process-btn').disabled = false;
+                            } else if (jobStatus.status === 'error') {
+                                clearInterval(pollInterval);
+                                statusDiv.innerHTML = `<div class="alert alert-error">Error: ${jobStatus.error || 'Processing failed'}</div>`;
+                                progressDiv.innerHTML = '';
+                                document.getElementById('process-btn').disabled = false;
+                            } else {
+                                // Update progress
+                                const progress = jobStatus.progress || 0;
+                                const message = jobStatus.message || 'Processing...';
+                                const processed = jobStatus.processed_frames || 0;
+                                const total = jobStatus.total_frames || 0;
+                                let progressText = message;
+                                if (total > 0) {
+                                    progressText = `${message} (${processed}/${total} frames - ${progress}%)`;
+                                }
+                                progressDiv.innerHTML = `<div class="progress-bar"><div class="progress-fill" style="width: ${progress}%">${progressText}</div></div>`;
+                            }
+                        } catch (error) {
+                            console.error('Error polling job status:', error);
+                        }
+                    }, 2000); // Poll every 2 seconds
+                    
+                    // Stop polling after 10 minutes
+                    setTimeout(() => {
+                        clearInterval(pollInterval);
+                    }, 600000);
+                    
                 } else {
                     statusDiv.innerHTML = `<div class="alert alert-error">Error: ${result.error}</div>`;
+                    progressDiv.innerHTML = '';
+                    document.getElementById('process-btn').disabled = false;
                 }
             } catch (error) {
                 statusDiv.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
-            } finally {
-                document.getElementById('process-btn').disabled = false;
                 progressDiv.innerHTML = '';
+                document.getElementById('process-btn').disabled = false;
             }
         }
         
@@ -708,7 +753,12 @@ def build_watchlist_api():
 def process_video_api():
     """Process video file."""
     job_id = str(uuid.uuid4())
-    processing_jobs[job_id] = {'status': 'processing', 'timestamp': time.time()}
+    processing_jobs[job_id] = {
+        'status': 'processing', 
+        'timestamp': time.time(),
+        'progress': 0,
+        'message': 'Initializing...'
+    }
     
     try:
         fps = int(request.form.get('fps', 10))
@@ -729,11 +779,72 @@ def process_video_api():
         if not video_path:
             return jsonify({'success': False, 'error': 'No video provided'}), 400
         
+        # Update threshold if provided
+        if processor:
+            processor.matcher.threshold = threshold
+        
         # Process in background thread
         def process():
             try:
+                import cv2
+                # Get video info for progress tracking
+                cap = cv2.VideoCapture(video_path)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
+                cap.release()
+                frames_to_process = total_frames // fps if fps > 0 else 0
+                
+                processing_jobs[job_id]['message'] = f'Processing video... (0/{frames_to_process} frames)'
+                processing_jobs[job_id]['total_frames'] = frames_to_process
+                processing_jobs[job_id]['processed_frames'] = 0
+                
                 output_file = os.path.join(app.config['RESULTS_FOLDER'], f'{job_id}.json')
-                results = processor.process_video(video_path, output_file=output_file, fps=fps)
+                
+                # Process video with progress tracking
+                results = []
+                with VideoHandler(video_path, fps=fps) as video:
+                    for frame_num, frame, timestamp in video.frames():
+                        # Detect faces
+                        faces = processor.detector.detect(frame)
+                        processor.event_handler.detection(len(faces), source=video_path)
+                        
+                        for face_info in faces:
+                            # Get embedding
+                            embedding = processor.recognizer.get_embedding(frame, face_info['face'])
+                            if embedding is None:
+                                continue
+                            
+                            # Match against database
+                            is_match, person_id, person_name, similarity = processor.matcher.is_match(embedding)
+                            
+                            result = {
+                                'frame': frame_num,
+                                'timestamp': timestamp,
+                                'bbox': face_info['bbox'],
+                                'det_score': face_info['det_score'],
+                                'matched': is_match,
+                                'person_id': person_id,
+                                'person_name': person_name,
+                                'similarity': similarity
+                            }
+                            
+                            if is_match:
+                                processor.event_handler.alert(person_id, person_name, similarity, metadata={'frame': frame_num})
+                                processor.event_handler.track(person_id, person_name, location=video_path, frame_number=frame_num, timestamp=timestamp)
+                            
+                            results.append(result)
+                        
+                        # Update progress
+                        processing_jobs[job_id]['processed_frames'] = frame_num
+                        if frames_to_process > 0:
+                            progress = min(90, int((frame_num / frames_to_process) * 90))  # Reserve 10% for finalization
+                            processing_jobs[job_id]['progress'] = progress
+                            processing_jobs[job_id]['message'] = f'Processing... ({frame_num}/{frames_to_process} frames)'
+                
+                # Save results
+                import json
+                with open(output_file, 'w') as f:
+                    json.dump(results, f, indent=2)
+                
                 matches = len([r for r in results if r.get('matched', False)])
                 processing_jobs[job_id] = {
                     'status': 'completed',
@@ -741,25 +852,36 @@ def process_video_api():
                     'total_detections': len(results),
                     'timestamp': time.time(),
                     'filename': os.path.basename(video_path),
-                    'output_file': output_file
+                    'output_file': output_file,
+                    'progress': 100,
+                    'message': f'Completed: {matches} matches found in {len(results)} detections'
                 }
             except Exception as e:
+                import traceback
+                error_msg = str(e)
                 processing_jobs[job_id] = {
                     'status': 'error',
-                    'error': str(e),
-                    'timestamp': time.time()
+                    'error': error_msg,
+                    'timestamp': time.time(),
+                    'progress': 0,
+                    'message': f'Error: {error_msg}'
                 }
         
-        thread = threading.Thread(target=process)
+        thread = threading.Thread(target=process, daemon=True)
         thread.start()
         
         return jsonify({
             'success': True,
             'job_id': job_id,
-            'message': 'Processing started'
+            'message': 'Processing started',
+            'status': 'processing'
         })
     except Exception as e:
-        processing_jobs[job_id] = {'status': 'error', 'error': str(e)}
+        processing_jobs[job_id] = {
+            'status': 'error', 
+            'error': str(e),
+            'timestamp': time.time()
+        }
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/results')
@@ -775,6 +897,15 @@ def get_results():
     results.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
     return jsonify(results)
 
+@app.route('/api/job-status/<job_id>')
+def job_status(job_id):
+    """Get job processing status."""
+    if job_id not in processing_jobs:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    job = processing_jobs[job_id].copy()
+    return jsonify(job)
+
 @app.route('/api/download-results/<job_id>')
 def download_results(job_id):
     """Download results file."""
@@ -783,7 +914,11 @@ def download_results(job_id):
     
     job = processing_jobs[job_id]
     if job.get('status') != 'completed':
-        return jsonify({'error': 'Job not completed'}), 400
+        return jsonify({
+            'error': 'Job not completed',
+            'status': job.get('status'),
+            'message': job.get('message', 'Processing in progress...')
+        }), 400
     
     output_file = job.get('output_file')
     if not output_file or not os.path.exists(output_file):
@@ -797,5 +932,6 @@ def handle_file_too_large(e):
 
 if __name__ == '__main__':
     init_app()
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
 

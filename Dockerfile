@@ -2,11 +2,11 @@ FROM python:3.12-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libgomp1 \
     wget \
     unzip \
@@ -34,8 +34,8 @@ RUN python -c "import requests; requests.packages.urllib3.disable_warnings(); r 
     unzip -q /tmp/buffalo_l.zip && \
     rm /tmp/buffalo_l.zip
 
-# Expose port
-EXPOSE 5000
+# Expose port (Railway will set PORT env var)
+EXPOSE ${PORT:-5000}
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
