@@ -32,15 +32,44 @@ processor = None
 event_handler = None
 processing_jobs = {}  # Track processing jobs
 
+def get_processor():
+    """Get or create processor instance (lazy initialization)."""
+    global processor
+    if processor is None:
+        try:
+            print("Lazy loading processor and models...")
+            if database is None:
+                global database
+                database = Database()
+            processor = FaceRecognitionProcessor(database)
+            print("Processor initialized successfully")
+        except Exception as e:
+            import traceback
+            print(f"ERROR: Could not initialize processor: {e}")
+            traceback.print_exc()
+            raise
+    return processor
+
 def init_app():
     """Initialize application components."""
     global database, processor, event_handler
     try:
+        print("Initializing database...")
         database = Database()
-        processor = FaceRecognitionProcessor(database)
+        print("Database initialized successfully")
+        
+        print("Initializing event handler...")
         event_handler = EventHandler()
+        print("Event handler initialized successfully")
+        
+        # Don't initialize processor immediately - it loads heavy models
+        # Will be initialized lazily on first use via get_processor()
+        processor = None
+        print("App initialization complete (processor will load on first use)")
     except Exception as e:
-        print(f"Warning: Could not initialize components: {e}")
+        import traceback
+        print(f"ERROR: Could not initialize components: {e}")
+        traceback.print_exc()
         # Will be initialized on first use
 
 def allowed_file(filename):
@@ -691,6 +720,16 @@ def index():
     """Main dashboard."""
     return render_template_string(DASHBOARD_HTML)
 
+@app.route('/health')
+def health():
+    """Health check endpoint for Railway."""
+    return jsonify({
+        'status': 'ok',
+        'database': database is not None,
+        'processor': processor is not None,
+        'event_handler': event_handler is not None
+    }), 200
+
 @app.route('/api/stats')
 def stats():
     """Get system statistics."""
@@ -742,8 +781,9 @@ def build_watchlist_api():
             return jsonify({'success': False, 'error': 'No valid image files'}), 400
         
         # Build watchlist
-        count = processor.build_watchlist('watchlist_photos', person_id_prefix='person')
-        processor.matcher.invalidate_cache()
+        proc = get_processor()
+        count = proc.build_watchlist('watchlist_photos', person_id_prefix='person')
+        proc.matcher.invalidate_cache()
         
         return jsonify({'success': True, 'count': count})
     except Exception as e:
@@ -780,8 +820,11 @@ def process_video_api():
             return jsonify({'success': False, 'error': 'No video provided'}), 400
         
         # Update threshold if provided
-        if processor:
-            processor.matcher.threshold = threshold
+        try:
+            proc = get_processor()
+            proc.matcher.threshold = threshold
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Failed to initialize processor: {str(e)}'}), 500
         
         # Process in background thread
         def process():
@@ -799,22 +842,25 @@ def process_video_api():
                 
                 output_file = os.path.join(app.config['RESULTS_FOLDER'], f'{job_id}.json')
                 
+                # Get processor (lazy load)
+                proc = get_processor()
+                
                 # Process video with progress tracking
                 results = []
                 with VideoHandler(video_path, fps=fps) as video:
                     for frame_num, frame, timestamp in video.frames():
                         # Detect faces
-                        faces = processor.detector.detect(frame)
-                        processor.event_handler.detection(len(faces), source=video_path)
+                        faces = proc.detector.detect(frame)
+                        proc.event_handler.detection(len(faces), source=video_path)
                         
                         for face_info in faces:
                             # Get embedding
-                            embedding = processor.recognizer.get_embedding(frame, face_info['face'])
+                            embedding = proc.recognizer.get_embedding(frame, face_info['face'])
                             if embedding is None:
                                 continue
                             
                             # Match against database
-                            is_match, person_id, person_name, similarity = processor.matcher.is_match(embedding)
+                            is_match, person_id, person_name, similarity = proc.matcher.is_match(embedding)
                             
                             result = {
                                 'frame': frame_num,
@@ -931,7 +977,18 @@ def handle_file_too_large(e):
     return jsonify({'error': 'File too large. Maximum size is 500MB'}), 413
 
 if __name__ == '__main__':
-    init_app()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    try:
+        print("=" * 50)
+        print("Starting AI CCTV Face Recognition System")
+        print("=" * 50)
+        init_app()
+        port = int(os.environ.get('PORT', 5000))
+        print(f"Starting Flask server on 0.0.0.0:{port}")
+        print(f"PORT environment variable: {os.environ.get('PORT', 'not set')}")
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    except Exception as e:
+        import traceback
+        print(f"FATAL ERROR starting application: {e}")
+        traceback.print_exc()
+        raise
 
