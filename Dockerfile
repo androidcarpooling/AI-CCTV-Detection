@@ -47,5 +47,5 @@ ENV FLASK_APP=web_app.py
 # Use sh -c to ensure PORT variable is properly expanded
 # Use --preload to load app before forking workers (faster startup)
 # Use --timeout 300 for long-running requests (video processing)
-CMD sh -c 'gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 300 --keepalive 5 --access-logfile - --error-logfile - --log-level info --preload web_app:app'
+CMD sh -c 'gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 4 --timeout 300 --access-logfile - --error-logfile - --log-level info --preload web_app:app'
 

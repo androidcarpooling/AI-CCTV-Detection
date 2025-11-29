@@ -48,5 +48,5 @@ ENV FLASK_APP=web_app.py
 
 # Run the application with gunicorn (production WSGI server)
 # Render sets PORT automatically, but we use 10000 as default
-CMD sh -c 'gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 2 --threads 4 --timeout 300 --keepalive 5 --access-logfile - --error-logfile - --log-level info --preload web_app:app'
+CMD sh -c 'gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 2 --threads 4 --timeout 300 --access-logfile - --error-logfile - --log-level info --preload web_app:app'
 

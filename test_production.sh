@@ -41,10 +41,10 @@ export PORT=5000
 
 # Start Gunicorn in background
 echo -e "${GREEN}Starting Gunicorn (Production Mode)...${NC}"
-echo -e "${YELLOW}Command: gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 300 --keepalive 5 --access-logfile - --error-logfile - --log-level info --preload web_app:app${NC}"
+echo -e "${YELLOW}Command: gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 300 --access-logfile - --error-logfile - --log-level info --preload web_app:app${NC}"
 echo ""
 
-gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 300 --keepalive 5 --access-logfile - --error-logfile - --log-level info --preload web_app:app &
+gunicorn --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 300 --access-logfile - --error-logfile - --log-level info --preload web_app:app &
 GUNICORN_PID=$!
 
 # Wait for server to start
