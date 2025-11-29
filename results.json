@@ -1,0 +1,482 @@
+[
+  {
+    "frame": 0,
+    "timestamp": 0.0,
+    "bbox": [
+      185,
+      85,
+      232,
+      144
+    ],
+    "det_score": 0.8800432682037354,
+    "matched": true,
+    "person_id": "person_1",
+    "person_name": "Pasted image",
+    "similarity": 0.3963226758624335
+  },
+  {
+    "frame": 0,
+    "timestamp": 0.0,
+    "bbox": [
+      153,
+      41,
+      202,
+      101
+    ],
+    "det_score": 0.8119868636131287,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 10,
+    "timestamp": 0.3333333333333333,
+    "bbox": [
+      183,
+      85,
+      232,
+      151
+    ],
+    "det_score": 0.8487366437911987,
+    "matched": true,
+    "person_id": "person_1",
+    "person_name": "Pasted image",
+    "similarity": 0.3771065438143384
+  },
+  {
+    "frame": 10,
+    "timestamp": 0.3333333333333333,
+    "bbox": [
+      172,
+      45,
+      219,
+      99
+    ],
+    "det_score": 0.6136372089385986,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 20,
+    "timestamp": 0.6666666666666666,
+    "bbox": [
+      188,
+      84,
+      238,
+      146
+    ],
+    "det_score": 0.849703848361969,
+    "matched": true,
+    "person_id": "person_1",
+    "person_name": "Pasted image",
+    "similarity": 0.4049519431669892
+  },
+  {
+    "frame": 20,
+    "timestamp": 0.6666666666666666,
+    "bbox": [
+      170,
+      40,
+      221,
+      99
+    ],
+    "det_score": 0.7624019384384155,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 30,
+    "timestamp": 1.0,
+    "bbox": [
+      198,
+      81,
+      247,
+      141
+    ],
+    "det_score": 0.8474839329719543,
+    "matched": true,
+    "person_id": "person_1",
+    "person_name": "Pasted image",
+    "similarity": 0.399344388746348
+  },
+  {
+    "frame": 30,
+    "timestamp": 1.0,
+    "bbox": [
+      171,
+      37,
+      222,
+      99
+    ],
+    "det_score": 0.8091790676116943,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 40,
+    "timestamp": 1.3333333333333333,
+    "bbox": [
+      178,
+      38,
+      230,
+      102
+    ],
+    "det_score": 0.8369936943054199,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 40,
+    "timestamp": 1.3333333333333333,
+    "bbox": [
+      208,
+      80,
+      259,
+      138
+    ],
+    "det_score": 0.7928815484046936,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 50,
+    "timestamp": 1.6666666666666667,
+    "bbox": [
+      166,
+      43,
+      218,
+      107
+    ],
+    "det_score": 0.8394339084625244,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 50,
+    "timestamp": 1.6666666666666667,
+    "bbox": [
+      201,
+      93,
+      251,
+      147
+    ],
+    "det_score": 0.7356444597244263,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 60,
+    "timestamp": 2.0,
+    "bbox": [
+      119,
+      47,
+      171,
+      110
+    ],
+    "det_score": 0.8594617247581482,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 60,
+    "timestamp": 2.0,
+    "bbox": [
+      183,
+      86,
+      233,
+      146
+    ],
+    "det_score": 0.7525161504745483,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 70,
+    "timestamp": 2.3333333333333335,
+    "bbox": [
+      29,
+      58,
+      78,
+      112
+    ],
+    "det_score": 0.7684929370880127,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 70,
+    "timestamp": 2.3333333333333335,
+    "bbox": [
+      166,
+      99,
+      210,
+      154
+    ],
+    "det_score": 0.7655738592147827,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 110,
+    "timestamp": 3.6666666666666665,
+    "bbox": [
+      190,
+      65,
+      236,
+      122
+    ],
+    "det_score": 0.8427366018295288,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 130,
+    "timestamp": 4.333333333333333,
+    "bbox": [
+      125,
+      108,
+      172,
+      153
+    ],
+    "det_score": 0.7294559478759766,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 140,
+    "timestamp": 4.666666666666667,
+    "bbox": [
+      126,
+      93,
+      169,
+      145
+    ],
+    "det_score": 0.6539735794067383,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 150,
+    "timestamp": 5.0,
+    "bbox": [
+      146,
+      84,
+      188,
+      138
+    ],
+    "det_score": 0.7810708284378052,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 150,
+    "timestamp": 5.0,
+    "bbox": [
+      200,
+      131,
+      249,
+      175
+    ],
+    "det_score": 0.7755469083786011,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 160,
+    "timestamp": 5.333333333333333,
+    "bbox": [
+      133,
+      85,
+      175,
+      140
+    ],
+    "det_score": 0.7636381387710571,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 160,
+    "timestamp": 5.333333333333333,
+    "bbox": [
+      207,
+      122,
+      253,
+      162
+    ],
+    "det_score": 0.7512634992599487,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 170,
+    "timestamp": 5.666666666666667,
+    "bbox": [
+      103,
+      86,
+      144,
+      142
+    ],
+    "det_score": 0.7382329106330872,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 170,
+    "timestamp": 5.666666666666667,
+    "bbox": [
+      208,
+      149,
+      253,
+      191
+    ],
+    "det_score": 0.6300663352012634,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 180,
+    "timestamp": 6.0,
+    "bbox": [
+      180,
+      152,
+      229,
+      195
+    ],
+    "det_score": 0.6792068481445312,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 190,
+    "timestamp": 6.333333333333333,
+    "bbox": [
+      176,
+      144,
+      218,
+      178
+    ],
+    "det_score": 0.6847086548805237,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 190,
+    "timestamp": 6.333333333333333,
+    "bbox": [
+      318,
+      196,
+      330,
+      211
+    ],
+    "det_score": 0.5344972014427185,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 200,
+    "timestamp": 6.666666666666667,
+    "bbox": [
+      184,
+      137,
+      231,
+      186
+    ],
+    "det_score": 0.7646192312240601,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 220,
+    "timestamp": 7.333333333333333,
+    "bbox": [
+      125,
+      163,
+      171,
+      209
+    ],
+    "det_score": 0.7181396484375,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 230,
+    "timestamp": 7.666666666666667,
+    "bbox": [
+      111,
+      133,
+      155,
+      182
+    ],
+    "det_score": 0.6792411804199219,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  },
+  {
+    "frame": 240,
+    "timestamp": 8.0,
+    "bbox": [
+      132,
+      155,
+      178,
+      201
+    ],
+    "det_score": 0.7374141216278076,
+    "matched": false,
+    "person_id": null,
+    "person_name": null,
+    "similarity": 0.0
+  }
+]

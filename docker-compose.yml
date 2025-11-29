@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  face-recognition:
+    build: .
+    container_name: ai-cctv-face-recognition
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./watchlist.db:/app/watchlist.db
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+      - ./watchlist_photos:/app/watchlist_photos
+      - ~/.insightface:/root/.insightface
+    environment:
+      - DATABASE_TYPE=sqlite
+      - DATABASE_URL=watchlist.db
+      - SIMILARITY_THRESHOLD=0.35
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
