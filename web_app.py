@@ -41,6 +41,36 @@ processor = None
 event_handler = None
 processing_jobs = {}  # Track processing jobs
 
+def get_database():
+    """Get or create database instance (lazy initialization)."""
+    global database
+    if database is None:
+        try:
+            print("Lazy loading database...")
+            database = Database()
+            print("Database initialized successfully")
+        except Exception as e:
+            import traceback
+            print(f"ERROR: Could not initialize database: {e}")
+            traceback.print_exc()
+            return None
+    return database
+
+def get_event_handler():
+    """Get or create event handler instance (lazy initialization)."""
+    global event_handler
+    if event_handler is None:
+        try:
+            print("Lazy loading event handler...")
+            event_handler = EventHandler()
+            print("Event handler initialized successfully")
+        except Exception as e:
+            import traceback
+            print(f"ERROR: Could not initialize event handler: {e}")
+            traceback.print_exc()
+            return None
+    return event_handler
+
 def get_processor():
     """Get or create processor instance (lazy initialization)."""
     global processor, database
@@ -48,7 +78,9 @@ def get_processor():
         try:
             print("Lazy loading processor and models...")
             if database is None:
-                database = Database()
+                database = get_database()
+                if database is None:
+                    return None
             processor = FaceRecognitionProcessor(database)
             print("Processor initialized successfully")
         except Exception as e:
