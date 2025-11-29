@@ -43,6 +43,7 @@ EXPOSE ${PORT:-5000}
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=web_app.py
 
-# Run the application
-CMD ["python", "web_app.py"]
+# Run the application with gunicorn (production WSGI server)
+# Use 0.0.0.0 to bind to all interfaces, Railway will set PORT env var
+CMD gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --threads 2 --timeout 120 --access-logfile - --error-logfile - --log-level info web_app:app
 

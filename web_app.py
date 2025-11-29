@@ -10,6 +10,7 @@ from database import Database
 from processor import FaceRecognitionProcessor
 from event_handler import EventHandler
 from config import Config
+from input_handlers import VideoHandler
 import threading
 import time
 
@@ -972,24 +973,28 @@ def download_results(job_id):
 def handle_file_too_large(e):
     return jsonify({'error': 'File too large. Maximum size is 500MB'}), 413
 
+# Initialize app components when module is imported (for gunicorn)
+# This runs when gunicorn imports the module, not when Flask dev server runs
+try:
+    init_app()
+except Exception as e:
+    print(f"WARNING: Initialization had errors, but continuing: {e}")
+    # App will still start, components will initialize lazily
+
 if __name__ == '__main__':
+    # Only run Flask dev server when executed directly (local development)
+    # Gunicorn will import 'app' and run it in production
     try:
         print("=" * 50)
-        print("Starting AI CCTV Face Recognition System")
+        print("Starting AI CCTV Face Recognition System (Development Mode)")
         print("=" * 50)
-        
-        # Initialize app components (non-blocking - failures won't stop Flask)
-        try:
-            init_app()
-        except Exception as e:
-            print(f"WARNING: Initialization had errors, but continuing: {e}")
-            # App will still start, components will initialize lazily
         
         port = int(os.environ.get('PORT', 5000))
         print(f"PORT environment variable: {os.environ.get('PORT', 'not set')}")
-        print(f"Starting Flask server on 0.0.0.0:{port}")
+        print(f"Starting Flask development server on 0.0.0.0:{port}")
         print("Flask is ready to accept requests!")
         print(f"Health check available at: http://0.0.0.0:{port}/health")
+        print("NOTE: For production, use: gunicorn -b 0.0.0.0:PORT web_app:app")
         # Use threaded=True for better concurrency
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True, use_reloader=False)
     except Exception as e:
