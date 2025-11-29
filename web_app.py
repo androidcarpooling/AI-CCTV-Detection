@@ -34,12 +34,11 @@ processing_jobs = {}  # Track processing jobs
 
 def get_processor():
     """Get or create processor instance (lazy initialization)."""
-    global processor
+    global processor, database
     if processor is None:
         try:
             print("Lazy loading processor and models...")
             if database is None:
-                global database
                 database = Database()
             processor = FaceRecognitionProcessor(database)
             print("Processor initialized successfully")
