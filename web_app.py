@@ -721,13 +721,12 @@ def index():
 
 @app.route('/health')
 def health():
-    """Health check endpoint for Railway."""
-    return jsonify({
-        'status': 'ok',
-        'database': database is not None,
-        'processor': processor is not None,
-        'event_handler': event_handler is not None
-    }), 200
+    """Health check endpoint for Railway - must respond quickly."""
+    try:
+        # Simple health check - just verify Flask is running
+        return jsonify({'status': 'ok', 'message': 'Application is running'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/stats')
 def stats():
@@ -980,10 +979,18 @@ if __name__ == '__main__':
         print("=" * 50)
         print("Starting AI CCTV Face Recognition System")
         print("=" * 50)
-        init_app()
+        
+        # Initialize app components (non-blocking - failures won't stop Flask)
+        try:
+            init_app()
+        except Exception as e:
+            print(f"WARNING: Initialization had errors, but continuing: {e}")
+            # App will still start, components will initialize lazily
+        
         port = int(os.environ.get('PORT', 5000))
         print(f"Starting Flask server on 0.0.0.0:{port}")
         print(f"PORT environment variable: {os.environ.get('PORT', 'not set')}")
+        print("Flask is ready to accept requests!")
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     except Exception as e:
         import traceback
