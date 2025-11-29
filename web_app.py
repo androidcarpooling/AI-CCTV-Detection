@@ -16,6 +16,13 @@ import time
 app = Flask(__name__)
 CORS(app)
 
+# Register health endpoint IMMEDIATELY - before any initialization
+# This ensures Railway can check health as soon as Flask starts
+@app.route('/health')
+def health():
+    """Health check endpoint for Railway - must respond quickly."""
+    return jsonify({'status': 'ok', 'message': 'Application is running'}), 200
+
 # Configuration
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -719,15 +726,6 @@ def index():
     """Main dashboard."""
     return render_template_string(DASHBOARD_HTML)
 
-@app.route('/health')
-def health():
-    """Health check endpoint for Railway - must respond quickly."""
-    try:
-        # Simple health check - just verify Flask is running
-        return jsonify({'status': 'ok', 'message': 'Application is running'}), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
 @app.route('/api/stats')
 def stats():
     """Get system statistics."""
@@ -988,10 +986,12 @@ if __name__ == '__main__':
             # App will still start, components will initialize lazily
         
         port = int(os.environ.get('PORT', 5000))
-        print(f"Starting Flask server on 0.0.0.0:{port}")
         print(f"PORT environment variable: {os.environ.get('PORT', 'not set')}")
+        print(f"Starting Flask server on 0.0.0.0:{port}")
         print("Flask is ready to accept requests!")
-        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+        print(f"Health check available at: http://0.0.0.0:{port}/health")
+        # Use threaded=True for better concurrency
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True, use_reloader=False)
     except Exception as e:
         import traceback
         print(f"FATAL ERROR starting application: {e}")
